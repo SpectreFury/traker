@@ -1,4 +1,4 @@
-package com.anonymous.traker
+package com.spectrefury.traker
 
 import android.app.Application
 import android.content.res.Configuration

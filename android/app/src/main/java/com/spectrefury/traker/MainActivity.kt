@@ -1,4 +1,4 @@
-package com.anonymous.traker
+package com.spectrefury.traker
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

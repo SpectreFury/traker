@@ -1,7 +1,12 @@
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import {
+  getAuth,
+  onAuthStateChanged,
+  FirebaseAuthTypes,
+} from "@react-native-firebase/auth";
 
 import "./globals.css";
 
@@ -24,6 +29,22 @@ export default function RootLayout() {
     "OpenSans-SemiBoldItalic": require("../assets/fonts/OpenSans-SemiBoldItalic.ttf"),
   });
 
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>();
+
+  console.log(user);
+
+  useEffect(() => {
+    const subscriber = onAuthStateChanged(getAuth(), (user) => {
+      setUser(user);
+    });
+    if (initializing) {
+      setInitializing(false);
+    }
+
+    return subscriber;
+  }, []);
+
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
@@ -31,6 +52,10 @@ export default function RootLayout() {
   }, [fontsLoaded]);
 
   if (!fontsLoaded) {
+    return null;
+  }
+
+  if (initializing) {
     return null;
   }
 

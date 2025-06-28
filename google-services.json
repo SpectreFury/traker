@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "785565034446",
+    "project_id": "traker-538cb",
+    "storage_bucket": "traker-538cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:785565034446:android:902c358bb47e990767ed9f",
+        "android_client_info": {
+          "package_name": "com.spectrefury.traker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "785565034446-e85n7ecn4vuk9im1aagrq5tn85tbre54.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.spectrefury.traker",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "785565034446-pik9e2kdmk79h4jabce1qeq6sjb0ipu8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXtZgbUA8EafXWYT3SdA-mP45-rUwJlxY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "785565034446-pik9e2kdmk79h4jabce1qeq6sjb0ipu8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
