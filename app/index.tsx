@@ -63,6 +63,10 @@ export default function Index() {
     }
   }, [user]);
 
+  if (initializing) {
+    return null;
+  }
+
   return (
     <View className="flex-1 items-center justify-center px-8">
       <View className="items-center">
