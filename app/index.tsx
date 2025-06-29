@@ -1,50 +1,67 @@
+import { useUser } from "@/hooks/useUser";
 import auth from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Image } from "expo-image";
 import { useEffect } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function Index() {
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: '785565034446-pik9e2kdmk79h4jabce1qeq6sjb0ipu8.apps.googleusercontent.com', // Web Client ID from Firebase
-    });
-  }, []);
+  const { user, initializing } = useUser();
+  const router = useRouter();
 
   const handleGoogleLogin = async () => {
     try {
       // Check if device supports Google Play
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+
       // Get the users ID token
       const signInResult = await GoogleSignin.signIn();
       const idToken = signInResult.data?.idToken;
-      
+
       if (!idToken) {
-        throw new Error('No ID token received from Google Sign-In');
+        throw new Error("No ID token received from Google Sign-In");
       }
-      
+
       // Create a Google credential with the token
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      
+
       // Sign-in the user with the credential
-      const userCredential = await auth().signInWithCredential(googleCredential);
-      
-      console.log('User signed in with Google!', userCredential.user);
-      Alert.alert('Success', 'Signed in successfully!');
-      
+      const userCredential =
+        await auth().signInWithCredential(googleCredential);
+
+      console.log("User signed in with Google!", userCredential.user);
+      Alert.alert("Success", "Signed in successfully!");
     } catch (error: any) {
-      console.error('Google Sign-In Error:', error);
-      
-      if (error?.code === 'auth/operation-not-allowed') {
-        Alert.alert('Error', 'Google Sign-In is not enabled in Firebase Console');
-      } else if (error?.code === 'auth/invalid-credential') {
-        Alert.alert('Error', 'Invalid Google credentials');
+      console.error("Google Sign-In Error:", error);
+
+      if (error?.code === "auth/operation-not-allowed") {
+        Alert.alert(
+          "Error",
+          "Google Sign-In is not enabled in Firebase Console"
+        );
+      } else if (error?.code === "auth/invalid-credential") {
+        Alert.alert("Error", "Invalid Google credentials");
       } else {
-        Alert.alert('Error', 'Failed to sign in with Google');
+        Alert.alert("Error", "Failed to sign in with Google");
       }
     }
   };
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        "785565034446-pik9e2kdmk79h4jabce1qeq6sjb0ipu8.apps.googleusercontent.com", // Web Client ID from Firebase
+    });
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/home");
+    }
+  }, [user]);
 
   return (
     <View className="flex-1 items-center justify-center px-8">
