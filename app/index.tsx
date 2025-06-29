@@ -63,7 +63,7 @@ export default function Index() {
     }
   }, [user]);
 
-  if (initializing) {
+  if(initializing) {
     return null;
   }
 
