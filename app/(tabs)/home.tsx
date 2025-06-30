@@ -1,6 +1,8 @@
 import { ActivityCard } from "@/components/ActivityCard";
 import { useUser } from "@/hooks/useUser";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { getAuth, signOut } from "@react-native-firebase/auth";
+import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -13,9 +15,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 
 export default function Home() {
+  const auth = getAuth();
+
   const [data, setData] = useState([
     {
       id: "1",
@@ -34,6 +37,27 @@ export default function Home() {
 
   const { user, initializing } = useUser();
   const router = useRouter();
+
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut(auth);
+            router.replace("/");
+          } catch (error) {
+            Alert.alert("Error", "Failed to logout. Please try again.");
+          }
+        },
+      },
+    ]);
+  };
 
   const handleCreateActivity = () => {
     if (newActivityTitle.trim()) {
@@ -159,13 +183,35 @@ export default function Home() {
           </View>
         </View>
       </Modal>
+
+      {/* Header Section */}
       <View className="mt-40">
-        <Text className="font-opensans-medium text-2xl">
-          Good evening, {user?.displayName}
-        </Text>
-        <Text className="font-opensans-regular text-gray-600 mt-2">
-          Welcome to Traker, your personal activity tracker.
-        </Text>
+        <View className="flex-row justify-between items-start mb-2">
+          <View className="flex-1">
+            <Text className="font-opensans-medium text-2xl">
+              Good evening, {user?.displayName}
+            </Text>
+            <Text className="font-opensans-regular text-gray-600 mt-2">
+              Welcome to Traker, your personal activity tracker.
+            </Text>
+          </View>
+
+          {/* Logout Button */}
+          <TouchableOpacity
+            onPress={handleLogout}
+            className="ml-4 p-3 bg-zinc-100 rounded-full"
+            activeOpacity={0.7}
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+          >
+            <Ionicons name="log-out-outline" size={20} color="#71717a" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
