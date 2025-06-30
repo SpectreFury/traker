@@ -1,14 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { View, Text, Pressable } from "react-native";
-import Tag from "./Tag";
-import { useState } from "react";
 import { Image } from "expo-image";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import Tag from "./Tag";
 
 type ActivityCardProps = {
   id: string;
   title: string;
   author: string;
   photoURL?: string;
+  tags: string[];
 };
 
 export function ActivityCard({
@@ -16,40 +17,107 @@ export function ActivityCard({
   title,
   author,
   photoURL,
+  tags,
 }: ActivityCardProps) {
   const [isLiked, setIsLiked] = useState(false);
 
   return (
-    <View className="bg-zinc-200 p-4 border border-zinc-300 rounded mb-4">
-      <View className="flex-row justify-between">
-        <View className="gap-2">
-          <Text className="font-opensans-medium text-lg">{title}</Text>
-          <View className="flex-row gap-2">
-            <Tag title="Workout" />
-            <Tag title="Homework" />
+    <View
+      className="bg-white border border-zinc-100 rounded-2xl mb-6 overflow-hidden"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 4,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 6,
+      }}
+    >
+      <View className="p-6">
+        {/* Header with title and profile */}
+        <View className="flex-row justify-between items-start mb-4">
+          <View className="flex-1 mr-4">
+            <Text className="font-opensans-bold text-xl text-zinc-900 mb-2">
+              {title}
+            </Text>
+            <Text className="font-opensans-medium text-sm text-zinc-500">
+              by {author}
+            </Text>
+          </View>
+
+          {/* Profile Image */}
+          <View
+            className="bg-zinc-100 rounded-full overflow-hidden border-2 border-zinc-200"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <Image
+              source={photoURL}
+              style={{
+                width: 48,
+                height: 48,
+              }}
+              contentFit="cover"
+            />
           </View>
         </View>
-        <View>
-          <Image
-            source={photoURL}
-            style={{
-              width: 50,
-              height: 50,
-              overflow: "hidden",
-              borderRadius: 25,
-            }}
-            contentFit="contain"
-          />
-        </View>
-      </View>
 
-      <View className="mt-4">
-        <Pressable onPress={() => setIsLiked((prev) => !prev)}>
-          <Ionicons
-            name={isLiked ? "heart-sharp" : "heart-outline"}
-            size={20}
-          />
-        </Pressable>
+        {/* Tags */}
+        <View className="flex-row gap-2 mb-4">
+          {tags?.map((tag, index) => (
+            <Tag key={index} title={tag} />
+          ))}
+        </View>
+
+        {/* Timestamp */}
+        <Text className="font-opensans text-xs text-zinc-400 mb-4">
+          1 hour ago
+        </Text>
+
+        {/* Action Bar */}
+        <View className="flex-row items-center justify-between pt-4 border-t border-zinc-100">
+          <View className="flex-row items-center gap-4">
+            <Pressable
+              onPress={() => setIsLiked((prev) => !prev)}
+              className="flex-row items-center gap-2 px-3 py-2 rounded-full bg-zinc-50"
+              style={{
+                backgroundColor: isLiked ? "#fef2f2" : "#f9fafb",
+              }}
+            >
+              <Ionicons
+                name={isLiked ? "heart-sharp" : "heart-outline"}
+                size={18}
+                color={isLiked ? "#ef4444" : "#6b7280"}
+              />
+              <Text
+                className="font-opensans-medium text-sm"
+                style={{
+                  color: isLiked ? "#ef4444" : "#6b7280",
+                }}
+              >
+                {isLiked ? "Liked" : "Like"}
+              </Text>
+            </Pressable>
+
+            <Pressable className="flex-row items-center gap-2 px-3 py-2 rounded-full bg-zinc-50">
+              <Ionicons name="chatbubble-outline" size={16} color="#6b7280" />
+              <Text className="font-opensans-medium text-sm text-zinc-500">
+                Comment
+              </Text>
+            </Pressable>
+          </View>
+
+          <Pressable className="p-2 rounded-full bg-zinc-50">
+            <Ionicons name="share-outline" size={16} color="#6b7280" />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
