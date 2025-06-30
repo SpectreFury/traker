@@ -1,29 +1,60 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useState } from "react";
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { auth, firestore } from "@/services/firebase";
+import { useUser } from "@/hooks/useUser";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+} from "@react-native-firebase/firestore";
+
+type Group = {
+  id: string;
+  members: number;
+  name: string;
+  code: string;
+};
 
 export default function Track() {
   const [groupName, setGroupName] = useState("");
   const [groupCode, setGroupCode] = useState("");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showJoinGroup, setShowJoinGroup] = useState(false);
-  const [myGroups, setMyGroups] = useState([
-    { id: "1", name: "Gym Buddies", members: 5, code: "GYM123" },
-    { id: "2", name: "Morning Runners", members: 12, code: "RUN456" },
-  ]);
+  const [groups, setGroups] = useState<Group[]>([]);
 
-  const handleCreateGroup = () => {
+  const { user } = useUser();
+
+  const handleCreateGroup = async () => {
+    if (!user) return;
+
     if (groupName.trim()) {
       const newGroup = {
-        id: Date.now().toString(),
         name: groupName.trim(),
-        members: 1,
+        author: user.displayName,
+        members: [user.uid],
         code: Math.random().toString(36).substring(2, 8).toUpperCase(),
       };
-      setMyGroups([...myGroups, newGroup]);
+
+      const collectionRef = collection(firestore, "groups");
+      const docRef = await addDoc(collectionRef, newGroup);
+
+      setGroups((prev) => [
+        ...prev,
+        { id: docRef.id, name: newGroup.name, members: 1, code: newGroup.code },
+      ]);
+
       setGroupName("");
       setShowCreateGroup(false);
-      Alert.alert("Success", `Group "${newGroup.name}" created! Code: ${newGroup.code}`);
     } else {
       Alert.alert("Error", "Please enter a group name");
     }
@@ -38,6 +69,41 @@ export default function Track() {
       Alert.alert("Error", "Please enter a group code");
     }
   };
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      if (!user) return;
+
+      try {
+        const collectionRef = collection(firestore, "groups");
+        const q = query(
+          collectionRef,
+          where("members", "array-contains", user.uid)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        const fetchedGroups = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        console.log(fetchedGroups);
+        const formattedGroups = fetchedGroups.map((group: any) => ({
+          id: group.id,
+          name: group.name,
+          members: group.members.length,
+          code: group.code,
+        }));
+
+        setGroups(formattedGroups);
+      } catch (error) {
+        Alert.alert("Error", "Failed to fetch groups. Please try again.");
+      }
+    };
+
+    fetchGroups();
+  }, [user]);
 
   return (
     <ScrollView className="flex-1 bg-gray-50">
@@ -93,7 +159,7 @@ export default function Track() {
 
         {/* Create Group Form */}
         {showCreateGroup && (
-          <View 
+          <View
             className="bg-white p-6 rounded-2xl mb-6 border border-zinc-100"
             style={{
               shadowColor: "#000",
@@ -111,7 +177,7 @@ export default function Track() {
               placeholder="Enter group name"
               value={groupName}
               onChangeText={setGroupName}
-              style={{ fontFamily: 'OpenSans-Regular' }}
+              style={{ fontFamily: "OpenSans-Regular" }}
             />
             <View className="flex-row gap-3">
               <TouchableOpacity
@@ -138,7 +204,7 @@ export default function Track() {
 
         {/* Join Group Form */}
         {showJoinGroup && (
-          <View 
+          <View
             className="bg-white p-6 rounded-2xl mb-6 border border-zinc-100"
             style={{
               shadowColor: "#000",
@@ -157,7 +223,7 @@ export default function Track() {
               value={groupCode}
               onChangeText={setGroupCode}
               autoCapitalize="characters"
-              style={{ fontFamily: 'OpenSans-Regular' }}
+              style={{ fontFamily: "OpenSans-Regular" }}
             />
             <View className="flex-row gap-3">
               <TouchableOpacity
@@ -187,9 +253,9 @@ export default function Track() {
           <Text className="font-opensans-bold text-xl text-zinc-900 mb-4">
             My Groups
           </Text>
-          
-          {myGroups.length === 0 ? (
-            <View 
+
+          {groups.length === 0 ? (
+            <View
               className="bg-white p-8 rounded-2xl border border-zinc-100 items-center"
               style={{
                 shadowColor: "#000",
@@ -208,9 +274,9 @@ export default function Track() {
               </Text>
             </View>
           ) : (
-            myGroups.map((group) => (
+            groups.map((group, index) => (
               <View
-                key={group.id}
+                key={index}
                 className="bg-white p-6 rounded-2xl mb-4 border border-zinc-100"
                 style={{
                   shadowColor: "#000",
@@ -226,7 +292,7 @@ export default function Track() {
                       {group.name}
                     </Text>
                     <Text className="font-opensans text-zinc-600 mt-1">
-                      {group.members} member{group.members !== 1 ? 's' : ''}
+                      {group.members} member{group.members !== 1 ? "s" : ""}
                     </Text>
                   </View>
                   <View className="bg-zinc-100 px-3 py-2 rounded-lg">

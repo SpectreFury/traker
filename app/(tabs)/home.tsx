@@ -1,10 +1,10 @@
 import { ActivityCard } from "@/components/ActivityCard";
 import { useUser } from "@/hooks/useUser";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { getAuth, signOut } from "@react-native-firebase/auth";
+import { signOut } from "@react-native-firebase/auth";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -15,10 +15,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { auth, firestore } from "@/services/firebase";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+} from "@react-native-firebase/firestore";
 
 export default function Home() {
-  const auth = getAuth();
-
   const [data, setData] = useState([
     {
       id: "1",
@@ -78,6 +83,31 @@ export default function Home() {
       Alert.alert("Error", "Please enter an activity title");
     }
   };
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      if (!user) return;
+
+      try {
+        const q = query(
+          collection(firestore, "groups"),
+          where("members", "array-contains", user.uid)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach((doc) => {
+          const groupData = doc.data();
+
+          console.log(groupData);
+        });
+      } catch (error) {
+        Alert.alert("Error", "Failed to fetch groups. Please try again.");
+      }
+    };
+
+    fetchGroups();
+  }, []);
 
   return (
     <View className="flex-1 px-8">
