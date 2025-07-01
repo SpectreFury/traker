@@ -30,9 +30,17 @@ type Group = {
   name: string;
 };
 
+type Data = {
+  id: string;
+  title: string;
+  author: string;
+  photoURL: string;
+  tags: string[];
+};
+
 export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<Data[]>([]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [newActivityTitle, setNewActivityTitle] = useState("");
@@ -45,10 +53,66 @@ export default function Home() {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await fetchActivities();
     } catch (error) {
+      Alert.alert("Error", "Failed to refresh activities. Please try again.");
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const fetchActivities = async () => {
+    if (!user) return;
+
+    try {
+      // First, get all groups where the user is a member
+      const groupsQuery = query(
+        collection(firestore, "groups"),
+        where("members", "array-contains", user.uid)
+      );
+
+      const groupsSnapshot = await getDocs(groupsQuery);
+      const userGroupIds = groupsSnapshot.docs.map((doc) => doc.id);
+
+      if (userGroupIds.length === 0) {
+        setData([]);
+        return;
+      }
+
+      // Then, get all activities that belong to those groups
+      const activitiesQuery = query(
+        collection(firestore, "activities"),
+        where("group", "in", userGroupIds)
+      );
+
+      const activitiesSnapshot = await getDocs(activitiesQuery);
+
+      const fetchedActivities = activitiesSnapshot.docs.map((doc) => {
+        const activityData = doc.data();
+
+        return {
+          id: doc.id,
+          title: activityData.name || "Untitled Activity",
+          author: activityData.authorName || "Unknown",
+          photoURL: activityData.authorPhoto || "https://picsum.photos/200",
+          tags: activityData.tags || ["Activity"],
+        };
+      });
+
+      // Sort by creation date (newest first)
+      fetchedActivities.sort((a, b) => {
+        const aDate = activitiesSnapshot.docs
+          .find((doc) => doc.id === a.id)
+          ?.data().createdAt;
+        const bDate = activitiesSnapshot.docs
+          .find((doc) => doc.id === b.id)
+          ?.data().createdAt;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
+      });
+
+      setData(fetchedActivities);
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch activities. Please try again.");
     }
   };
 
@@ -79,23 +143,20 @@ export default function Home() {
     try {
       const collectionRef = collection(firestore, "activities");
 
-      const docRef = await addDoc(collectionRef, {
+      await addDoc(collectionRef, {
         name: newActivityTitle.trim(),
         author: user.uid,
+        authorName: user.displayName || "Unknown",
+        authorPhoto: user.photoURL || "https://picsum.photos/200",
         group: selectedGroup,
         likes: [],
+        tags: ["New"],
         createdAt: new Date().toISOString(),
       });
 
-      const newActivity = {
-        id: docRef.id,
-        title: newActivityTitle,
-        author: user?.displayName || "Unknown",
-        photoURL: user?.photoURL || "https://picsum.photos/200",
-        tags: ["New"],
-      };
+      // Refresh the activities list
+      await fetchActivities();
 
-      setData([newActivity, ...data]);
       setNewActivityTitle("");
       setModalVisible(false);
     } catch (error) {
@@ -126,8 +187,11 @@ export default function Home() {
       }
     };
 
-    fetchGroups();
-  }, []);
+    if (user) {
+      fetchGroups();
+      fetchActivities();
+    }
+  }, [user]);
 
   return (
     <View className="flex-1 px-8">

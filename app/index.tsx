@@ -32,7 +32,6 @@ export default function Index() {
       const userCredential =
         await auth().signInWithCredential(googleCredential);
 
-      console.log("User signed in with Google!", userCredential.user);
       Alert.alert("Success", "Signed in successfully!");
     } catch (error: any) {
       console.error("Google Sign-In Error:", error);

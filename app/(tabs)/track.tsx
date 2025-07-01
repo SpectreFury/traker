@@ -12,9 +12,13 @@ import { auth, firestore } from "@/services/firebase";
 import { useUser } from "@/hooks/useUser";
 import {
   addDoc,
+  arrayUnion,
   collection,
+  doc,
+  getDoc,
   getDocs,
   query,
+  updateDoc,
   where,
 } from "@react-native-firebase/firestore";
 
@@ -60,14 +64,29 @@ export default function Track() {
     }
   };
 
-  const handleJoinGroup = () => {
-    if (groupCode.trim()) {
-      Alert.alert("Success", `Joined group with code: ${groupCode}`);
-      setGroupCode("");
-      setShowJoinGroup(false);
-    } else {
-      Alert.alert("Error", "Please enter a group code");
+  const handleJoinGroup = async () => {
+    if (!user || !groupCode.trim()) return;
+
+    // Check if the group code exists in any group, get that
+
+    const collectionRef = collection(firestore, "groups");
+    const q = query(collectionRef, where("code", "==", groupCode.trim()));
+
+    const docRef = await getDocs(q);
+
+    if (docRef.empty) {
+      Alert.alert("Error", "Group code not found. Please check and try again.");
+      return;
     }
+
+    const docId = docRef.docs[0].id;
+
+    updateDoc(doc(firestore, "groups", docId), {
+      members: arrayUnion(user.uid),
+    });
+
+    setGroupCode("");
+    setShowJoinGroup(false);
   };
 
   useEffect(() => {
@@ -88,7 +107,6 @@ export default function Track() {
           ...doc.data(),
         }));
 
-        console.log(fetchedGroups);
         const formattedGroups = fetchedGroups.map((group: any) => ({
           id: group.id,
           name: group.name,
