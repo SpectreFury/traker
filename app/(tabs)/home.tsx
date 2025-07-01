@@ -1,7 +1,15 @@
 import { ActivityCard } from "@/components/ActivityCard";
 import { useUser } from "@/hooks/useUser";
+import { auth, firestore } from "@/services/firebase";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { signOut } from "@react-native-firebase/auth";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+} from "@react-native-firebase/firestore";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -10,38 +18,39 @@ import {
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth, firestore } from "@/services/firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from "@react-native-firebase/firestore";
+
+type Group = {
+  id: string;
+  name: string;
+};
 
 export default function Home() {
-  const [data, setData] = useState([
-    {
-      id: "1",
-      title: "Chest Day",
-      author: "Ashhar",
-      photoURL: "https://picsum.photos/200",
-      tags: ["Workout", "Strength"],
-    },
-  ]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [data, setData] = useState([]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [newActivityTitle, setNewActivityTitle] = useState("");
-  const [newActivityDescription, setNewActivityDescription] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("r/workout");
-  const [groups, setGroups] = useState(["r/workout", "r/fitness"]);
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const [groups, setGroups] = useState<Group[]>([]);
 
   const { user, initializing } = useUser();
   const router = useRouter();
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (error) {
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -64,11 +73,23 @@ export default function Home() {
     ]);
   };
 
-  const handleCreateActivity = () => {
-    if (newActivityTitle.trim()) {
+  const handleCreateActivity = async () => {
+    if (!user || !selectedGroup || !newActivityTitle.trim()) return;
+
+    try {
+      const collectionRef = collection(firestore, "activities");
+
+      const docRef = await addDoc(collectionRef, {
+        name: newActivityTitle.trim(),
+        author: user.uid,
+        group: selectedGroup,
+        likes: [],
+        createdAt: new Date().toISOString(),
+      });
+
       const newActivity = {
-        id: Date.now().toString(),
-        title: newActivityTitle.trim(),
+        id: docRef.id,
+        title: newActivityTitle,
         author: user?.displayName || "Unknown",
         photoURL: user?.photoURL || "https://picsum.photos/200",
         tags: ["New"],
@@ -76,11 +97,9 @@ export default function Home() {
 
       setData([newActivity, ...data]);
       setNewActivityTitle("");
-      setNewActivityDescription("");
       setModalVisible(false);
-      Alert.alert("Success", "Activity created successfully!");
-    } else {
-      Alert.alert("Error", "Please enter an activity title");
+    } catch (error) {
+      Alert.alert("Error", "Failed to create activity. Please try again.");
     }
   };
 
@@ -96,11 +115,12 @@ export default function Home() {
 
         const querySnapshot = await getDocs(q);
 
-        querySnapshot.forEach((doc) => {
-          const groupData = doc.data();
+        const fetchedGroups = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          name: doc.data().name,
+        }));
 
-          console.log(groupData);
-        });
+        setGroups(fetchedGroups as Group[]);
       } catch (error) {
         Alert.alert("Error", "Failed to fetch groups. Please try again.");
       }
@@ -180,11 +200,18 @@ export default function Home() {
                 Group
               </Text>
               <Picker
+                selectedValue={selectedGroup}
                 className="border border-zinc-200 rounded-xl bg-zinc-50"
-                onValueChange={(itemValue) => console.log(itemValue)}
+                onValueChange={(itemValue: string) =>
+                  setSelectedGroup(itemValue)
+                }
               >
                 {groups.map((group, index) => (
-                  <Picker.Item key={index} label={group} value={group} />
+                  <Picker.Item
+                    key={index}
+                    label={group.name}
+                    value={group.id}
+                  />
                 ))}
               </Picker>
             </View>
@@ -245,6 +272,9 @@ export default function Home() {
       </View>
 
       <FlatList
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         className="mt-10"
         data={data}
         keyExtractor={(item) => item.id}
@@ -257,6 +287,28 @@ export default function Home() {
             photoURL={user?.photoURL || item.photoURL}
             tags={["Workout"]}
           />
+        )}
+        ListEmptyComponent={() => (
+          <View className="flex-1 justify-center items-center py-20">
+            <View className="bg-zinc-100 rounded-full p-6 mb-6">
+              <Ionicons name="fitness-outline" size={48} color="#71717a" />
+            </View>
+            <Text className="font-opensans-semibold text-xl text-zinc-800 mb-2 text-center">
+              No activities yet
+            </Text>
+            <Text className="font-opensans-regular text-zinc-600 text-center max-w-xs leading-6">
+              Start tracking your activities by tapping the plus button below
+            </Text>
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              className="mt-6 bg-zinc-800 px-6 py-3 rounded-full"
+              activeOpacity={0.8}
+            >
+              <Text className="font-opensans-semibold text-white">
+                Create Activity
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       />
     </View>
