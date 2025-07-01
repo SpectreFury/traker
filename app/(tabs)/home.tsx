@@ -37,6 +37,7 @@ type Data = {
   photoURL: string;
   tags: string[];
   likes: string[];
+  createdAt: string;
 };
 
 export default function Home() {
@@ -98,6 +99,7 @@ export default function Home() {
           photoURL: activityData.authorPhoto || "https://picsum.photos/200",
           likes: activityData.likes || [],
           tags: activityData.tags || ["Activity"],
+          createdAt: activityData.createdAt,
         };
       });
 
@@ -354,6 +356,7 @@ export default function Home() {
             tags={["Workout"]}
             likes={item.likes}
             user={user!}
+            createdAt={new Date(item.createdAt)}
           />
         )}
         ListEmptyComponent={() => (

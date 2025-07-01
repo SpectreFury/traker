@@ -1,16 +1,20 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { Image } from "expo-image";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import Tag from "./Tag";
 import { firestore } from "@/services/firebase";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import {
   arrayRemove,
   arrayUnion,
   doc,
   updateDoc,
 } from "@react-native-firebase/firestore";
-import { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { Image } from "expo-image";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import Tag from "./Tag";
+
+dayjs.extend(relativeTime);
 
 type ActivityCardProps = {
   id: string;
@@ -20,6 +24,7 @@ type ActivityCardProps = {
   tags: string[];
   likes: string[];
   user: FirebaseAuthTypes.User | null;
+  createdAt: Date;
 };
 
 export function ActivityCard({
@@ -30,6 +35,7 @@ export function ActivityCard({
   tags,
   likes,
   user,
+  createdAt,
 }: ActivityCardProps) {
   const [isLiked, setIsLiked] = useState(likes.includes(id));
 
@@ -105,7 +111,7 @@ export function ActivityCard({
 
         {/* Timestamp */}
         <Text className="font-opensans text-xs text-zinc-400 mb-4">
-          1 hour ago
+          {dayjs(createdAt).fromNow()}
         </Text>
 
         {/* Action Bar */}
