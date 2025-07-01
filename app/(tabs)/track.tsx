@@ -67,26 +67,42 @@ export default function Track() {
   const handleJoinGroup = async () => {
     if (!user || !groupCode.trim()) return;
 
-    // Check if the group code exists in any group, get that
+    try {
+      const collectionRef = collection(firestore, "groups");
+      const q = query(collectionRef, where("code", "==", groupCode.trim()));
 
-    const collectionRef = collection(firestore, "groups");
-    const q = query(collectionRef, where("code", "==", groupCode.trim()));
+      const docRef = await getDocs(q);
 
-    const docRef = await getDocs(q);
+      if (docRef.empty) {
+        Alert.alert(
+          "Error",
+          "Group code not found. Please check and try again."
+        );
+        return;
+      }
 
-    if (docRef.empty) {
-      Alert.alert("Error", "Group code not found. Please check and try again.");
-      return;
+      const docId = docRef.docs[0].id;
+      const data = docRef.docs[0].data();
+
+      await updateDoc(doc(firestore, "groups", docId), {
+        members: arrayUnion(user.uid),
+      });
+
+      setGroups((prev) => [
+        ...prev,
+        {
+          id: docId,
+          name: data.name,
+          members: data.members.length + 1,
+          code: data.code,
+        },
+      ]);
+
+      setGroupCode("");
+      setShowJoinGroup(false);
+    } catch (error) {
+      Alert.alert("Error", "Failed to join group. Please try again.");
     }
-
-    const docId = docRef.docs[0].id;
-
-    updateDoc(doc(firestore, "groups", docId), {
-      members: arrayUnion(user.uid),
-    });
-
-    setGroupCode("");
-    setShowJoinGroup(false);
   };
 
   useEffect(() => {
