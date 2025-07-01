@@ -3,6 +3,14 @@ import { Image } from "expo-image";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Tag from "./Tag";
+import { firestore } from "@/services/firebase";
+import {
+  arrayRemove,
+  arrayUnion,
+  doc,
+  updateDoc,
+} from "@react-native-firebase/firestore";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 type ActivityCardProps = {
   id: string;
@@ -10,6 +18,8 @@ type ActivityCardProps = {
   author: string;
   photoURL?: string;
   tags: string[];
+  likes: string[];
+  user: FirebaseAuthTypes.User | null;
 };
 
 export function ActivityCard({
@@ -18,8 +28,25 @@ export function ActivityCard({
   author,
   photoURL,
   tags,
+  likes,
+  user,
 }: ActivityCardProps) {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(likes.includes(id));
+
+  const handleLike = async () => {
+    try {
+      // Immediately toggle the like state
+      setIsLiked((prev) => !prev);
+
+      // Lazy update the Firestore document
+      const docRef = doc(firestore, "activities", id);
+      await updateDoc(docRef, {
+        likes: isLiked ? arrayRemove(id) : arrayUnion(id),
+      });
+    } catch (error) {
+      console.error("Error liking activity:", error);
+    }
+  };
 
   return (
     <View
@@ -85,7 +112,7 @@ export function ActivityCard({
         <View className="flex-row items-center justify-between pt-4 border-t border-zinc-100">
           <View className="flex-row items-center gap-4">
             <Pressable
-              onPress={() => setIsLiked((prev) => !prev)}
+              onPress={handleLike}
               className="flex-row items-center gap-2 px-3 py-2 rounded-full bg-zinc-50"
               style={{
                 backgroundColor: isLiked ? "#fef2f2" : "#f9fafb",
@@ -105,18 +132,7 @@ export function ActivityCard({
                 {isLiked ? "Liked" : "Like"}
               </Text>
             </Pressable>
-
-            <Pressable className="flex-row items-center gap-2 px-3 py-2 rounded-full bg-zinc-50">
-              <Ionicons name="chatbubble-outline" size={16} color="#6b7280" />
-              <Text className="font-opensans-medium text-sm text-zinc-500">
-                Comment
-              </Text>
-            </Pressable>
           </View>
-
-          <Pressable className="p-2 rounded-full bg-zinc-50">
-            <Ionicons name="share-outline" size={16} color="#6b7280" />
-          </Pressable>
         </View>
       </View>
     </View>

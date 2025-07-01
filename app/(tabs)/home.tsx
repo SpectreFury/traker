@@ -36,6 +36,7 @@ type Data = {
   author: string;
   photoURL: string;
   tags: string[];
+  likes: string[];
 };
 
 export default function Home() {
@@ -95,6 +96,7 @@ export default function Home() {
           title: activityData.name || "Untitled Activity",
           author: activityData.authorName || "Unknown",
           photoURL: activityData.authorPhoto || "https://picsum.photos/200",
+          likes: activityData.likes || [],
           tags: activityData.tags || ["Activity"],
         };
       });
@@ -350,6 +352,8 @@ export default function Home() {
             author={item.author}
             photoURL={user?.photoURL || item.photoURL}
             tags={["Workout"]}
+            likes={item.likes}
+            user={user!}
           />
         )}
         ListEmptyComponent={() => (
